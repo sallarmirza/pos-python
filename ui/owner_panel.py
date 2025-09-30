@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton
 from ui.add_product_window import AddProductWindow
 from ui.inventory_window import InventoryWindow  
 from ui.manage_cashier_window import ManageCashiersWindow
+from ui.manage_cashier_window import ManageCashiersWindow
 
 
 class OwnerDashboard(QWidget):
@@ -41,7 +42,6 @@ class OwnerDashboard(QWidget):
         self.inventory_window = InventoryWindow(self.db)
         self.inventory_window.show()
         
-
     def open_manage_cashiers(self):
         self.cashier_window = ManageCashiersWindow(self.db)
         self.cashier_window.show()

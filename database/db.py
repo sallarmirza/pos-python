@@ -1,5 +1,6 @@
 import sqlite3
-
+import json
+from datetime import datetime
 DB = "pos.db"
 
 class Database:
@@ -131,6 +132,87 @@ class Database:
         except Exception as e:
             print("Delete cashier error:", e)
             return False
+    def setup_transactions(self):
+        # Transactions table
+        self.cur.execute("""
+            CREATE TABLE IF NOT EXISTS transactions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                cashier TEXT,
+                total REAL,
+                discount REAL,
+                tax REAL,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        # Items in each transaction
+        self.cur.execute("""
+            CREATE TABLE IF NOT EXISTS transaction_items (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                transaction_id INTEGER,
+                sku TEXT,
+                name TEXT,
+                price REAL,
+                quantity INTEGER,
+                FOREIGN KEY(transaction_id) REFERENCES transactions(id)
+            )
+        """)
+        self.conn.commit()
 
     def close(self):
         self.conn.close()
+
+
+    def add_transaction(self, cashier, cart, discount=0, tax=0):
+        """
+        Add a transaction and update inventory.
+
+        cart: list of tuples (sku, name, price, quantity)
+        """
+        try:
+            # Calculate subtotal and total
+            subtotal = sum(price * qty for _, _, price, qty in cart)
+            total = subtotal - discount + tax
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+            # Insert into transactions table
+            self.cur.execute(
+                "INSERT INTO transactions(cashier, total, discount, tax, timestamp) VALUES (?,?,?,?,?)",
+                (cashier, total, discount, tax, timestamp)
+            )
+            transaction_id = self.cur.lastrowid
+
+            # Insert items for this transaction
+            for sku, name, price, qty in cart:
+                self.cur.execute(
+                    "INSERT INTO transaction_items(transaction_id, sku, name, price, quantity) VALUES (?,?,?,?,?)",
+                    (transaction_id, sku, name, price, qty)
+                )
+                # Update inventory
+                self.cur.execute("UPDATE products SET stock = stock - ? WHERE sku=?", (qty, sku))
+
+            self.conn.commit()
+            return transaction_id
+        except Exception as e:
+            print("Add transaction error:", e)
+            return None
+
+    def get_transactions(self):
+        """
+        Retrieve all transactions with their items.
+        Returns a list of dictionaries.
+        """
+        self.cur.execute("SELECT id, cashier, total, discount, tax, timestamp FROM transactions ORDER BY id DESC")
+        transactions = []
+        for tid, cashier, total, discount, tax, timestamp in self.cur.fetchall():
+            self.cur.execute("SELECT sku, name, price, quantity FROM transaction_items WHERE transaction_id=?", (tid,))
+            items = [{"sku": sku, "name": name, "price": price, "qty": qty} for sku, name, price, qty in self.cur.fetchall()]
+            transactions.append({
+                "id": tid,
+                "cashier": cashier,
+                "items": items,
+                "discount": discount,
+                "tax": tax,
+                "total": total,
+                "timestamp": timestamp
+            })
+        return transactions

@@ -1,81 +1,91 @@
 from PyQt5.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QLabel,
-    QPushButton, QTableWidget, QTableWidgetItem, QMessageBox
+    QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
+    QLineEdit, QLabel, QTableWidget, QTableWidgetItem,
+    QMessageBox
 )
 from database.db import Database
 
 class ManageCashiersWindow(QWidget):
-    def __init__(self, db):
+    def __init__(self, db: Database):
         super().__init__()
         self.db = db
-        self.setWindowTitle("Manage Cashier Accounts")
-        self.setGeometry(450, 250, 500, 400)
+        self.setWindowTitle("Manage Cashiers")
+        self.setGeometry(200, 200, 500, 400)
+
         self.init_ui()
+        self.load_cashiers()
 
     def init_ui(self):
         layout = QVBoxLayout()
-
-        # Input fields for new cashier
-        input_layout = QHBoxLayout()
-        self.username_input = QLineEdit()
-        self.username_input.setPlaceholderText("Username")
-        self.password_input = QLineEdit()
-        self.password_input.setPlaceholderText("Password")
-        self.password_input.setEchoMode(QLineEdit.Password)
-        self.add_btn = QPushButton("Add Cashier")
-        self.add_btn.clicked.connect(self.add_cashier)
-
-        input_layout.addWidget(self.username_input)
-        input_layout.addWidget(self.password_input)
-        input_layout.addWidget(self.add_btn)
-
-        layout.addLayout(input_layout)
 
         # Table to display cashiers
         self.table = QTableWidget()
         self.table.setColumnCount(2)
         self.table.setHorizontalHeaderLabels(["ID", "Username"])
+        self.table.setEditTriggers(QTableWidget.NoEditTriggers)
         layout.addWidget(self.table)
 
-        # Delete button
-        self.delete_btn = QPushButton("Delete Selected Cashier")
-        self.delete_btn.clicked.connect(self.delete_cashier)
-        layout.addWidget(self.delete_btn)
+        # Add cashier section
+        add_layout = QHBoxLayout()
+        self.input_username = QLineEdit()
+        self.input_username.setPlaceholderText("Enter cashier username")
+        self.input_password = QLineEdit()
+        self.input_password.setPlaceholderText("Enter password")
+        self.input_password.setEchoMode(QLineEdit.Password)
+        self.btn_add = QPushButton("Add Cashier")
+        self.btn_add.clicked.connect(self.add_cashier)
+
+        add_layout.addWidget(QLabel("Username:"))
+        add_layout.addWidget(self.input_username)
+        add_layout.addWidget(QLabel("Password:"))
+        add_layout.addWidget(self.input_password)
+        add_layout.addWidget(self.btn_add)
+        layout.addLayout(add_layout)
+
+        # Delete selected cashier
+        self.btn_delete = QPushButton("Delete Selected Cashier")
+        self.btn_delete.clicked.connect(self.delete_cashier)
+        layout.addWidget(self.btn_delete)
 
         self.setLayout(layout)
-        self.load_cashiers()
 
     def load_cashiers(self):
+        self.table.setRowCount(0)
         cashiers = self.db.get_cashiers()
-        self.table.setRowCount(len(cashiers))
-        for row_idx, cashier in enumerate(cashiers):
-            self.table.setItem(row_idx, 0, QTableWidgetItem(str(cashier[0])))
-            self.table.setItem(row_idx, 1, QTableWidgetItem(cashier[1]))
+        for row_num, (cashier_id, username) in enumerate(cashiers):
+            self.table.insertRow(row_num)
+            self.table.setItem(row_num, 0, QTableWidgetItem(str(cashier_id)))
+            self.table.setItem(row_num, 1, QTableWidgetItem(username))
 
     def add_cashier(self):
-        username = self.username_input.text().strip()
-        password = self.password_input.text().strip()
+        username = self.input_username.text().strip()
+        password = self.input_password.text().strip()
         if not username or not password:
-            QMessageBox.warning(self, "Input Error", "Please enter both username and password")
+            QMessageBox.warning(self, "Error", "Username and password are required")
             return
 
         success = self.db.add_user(username, password, "cashier")
         if success:
-            QMessageBox.information(self, "Success", "Cashier added successfully!")
-            self.username_input.clear()
-            self.password_input.clear()
+            QMessageBox.information(self, "Success", f"Cashier '{username}' added!")
+            self.input_username.clear()
+            self.input_password.clear()
             self.load_cashiers()
         else:
             QMessageBox.warning(self, "Error", "Username already exists")
 
     def delete_cashier(self):
-        selected_row = self.table.currentRow()
-        if selected_row == -1:
-            QMessageBox.warning(self, "Error", "Please select a cashier to delete")
+        selected = self.table.currentRow()
+        if selected < 0:
+            QMessageBox.warning(self, "Error", "Select a cashier to delete")
             return
-        cashier_id = int(self.table.item(selected_row, 0).text())
-        confirm = QMessageBox.question(self, "Confirm Delete", "Are you sure you want to delete this cashier?")
+        cashier_id = int(self.table.item(selected, 0).text())
+        confirm = QMessageBox.question(
+            self, "Confirm Delete", "Are you sure you want to delete this cashier?",
+            QMessageBox.Yes | QMessageBox.No
+        )
         if confirm == QMessageBox.Yes:
-            self.db.delete_cashier(cashier_id)
-            QMessageBox.information(self, "Deleted", "Cashier deleted successfully")
-            self.load_cashiers()
+            if self.db.delete_cashier(cashier_id):
+                QMessageBox.information(self, "Deleted", "Cashier deleted successfully")
+                self.load_cashiers()
+            else:
+                QMessageBox.warning(self, "Error", "Failed to delete cashier")
