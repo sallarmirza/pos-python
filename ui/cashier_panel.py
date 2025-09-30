@@ -1,7 +1,5 @@
 from PyQt5.QtWidgets import (
-    QWidget, QVBoxLayout, QPushButton, QLabel, QLineEdit,
-    QHBoxLayout, QSpinBox, QTableWidget, QTableWidgetItem,
-    QMessageBox
+    QWidget, QVBoxLayout, QPushButton, QLabel
 )
 from database.db import Database
 
@@ -24,10 +22,10 @@ class CashierDashboard(QWidget):
         self.btn_sale.clicked.connect(self.open_sale_window)
         layout.addWidget(self.btn_sale)
 
-        # Keep placeholders for other buttons
         self.btn_search = QPushButton("Search Product / Scan SKU")
         self.btn_receipt = QPushButton("Print Receipt (Coming Soon)")
-        self.btn_history = QPushButton("Transaction History (Coming Soon)")
+        self.btn_history = QPushButton("Transaction History")
+        self.btn_history.clicked.connect(self.open_transaction_history)  # <--- connect inside class
 
         layout.addWidget(self.btn_search)
         layout.addWidget(self.btn_receipt)
@@ -36,6 +34,11 @@ class CashierDashboard(QWidget):
         self.setLayout(layout)
 
     def open_sale_window(self):
-        from ui.sale_window import SaleWindow  # we will create this
+        from ui.sale_window import SaleWindow
         self.sale_window = SaleWindow(self.db)
         self.sale_window.show()
+
+    def open_transaction_history(self):
+        from ui.transaction_history_window import TransactionHistoryWindow
+        self.trans_window = TransactionHistoryWindow(self.db)
+        self.trans_window.show()

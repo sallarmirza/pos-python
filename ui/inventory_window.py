@@ -39,20 +39,18 @@ class InventoryWindow(QWidget):
         self.load_data()
 
     def load_data(self):
+        self.table.setRowCount(0)
         products = self.db.get_all_products()
-        self.table.setRowCount(len(products))
+        for row_num, product in enumerate(products):
+            # product is (id, sku, name, price, stock, alert_level)
+            _id, sku, name, price, stock, alert = product
 
-        for row_idx, product in enumerate(products):
-            sku, name, price, stock, alert = product
-            self.table.setItem(row_idx, 0, QTableWidgetItem(sku))
-            self.table.setItem(row_idx, 1, QTableWidgetItem(name))
-            self.table.setItem(row_idx, 2, QTableWidgetItem(f"${price:.2f}"))
-            self.table.setItem(row_idx, 3, QTableWidgetItem(str(stock)))
-            self.table.setItem(row_idx, 4, QTableWidgetItem(str(alert)))
-
-            if stock < alert:
-                for col in range(5):
-                    self.table.item(row_idx, col).setBackground(QColor(255, 150, 150))
+            self.table.insertRow(row_num)
+            self.table.setItem(row_num, 0, QTableWidgetItem(sku))
+            self.table.setItem(row_num, 1, QTableWidgetItem(name))
+            self.table.setItem(row_num, 2, QTableWidgetItem(f"{price:.2f}"))
+            self.table.setItem(row_num, 3, QTableWidgetItem(str(stock)))
+            self.table.setItem(row_num, 4, QTableWidgetItem(str(alert)))
 
     def get_selected_product(self):
         row = self.table.currentRow()

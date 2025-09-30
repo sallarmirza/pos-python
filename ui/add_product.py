@@ -2,6 +2,7 @@ from PyQt5.QtWidgets import (
     QDialog, QFormLayout, QLineEdit, QSpinBox,
     QPushButton, QHBoxLayout, QMessageBox
 )
+import sqlite3
 
 class AddProductDialog(QDialog):
     def __init__(self, db):
@@ -42,24 +43,13 @@ class AddProductDialog(QDialog):
 
         self.setLayout(layout)
 
-    def add_product(self):
-        sku = self.sku.text().strip()
-        name = self.name.text().strip()
-        try:
-            price = float(self.price.text().strip())
-        except ValueError:
-            QMessageBox.warning(self, "Error", "Invalid price value")
-            return
-
-        stock = self.stock.value()
-        alert = self.alert.value()
-
-        if not sku or not name:
-            QMessageBox.warning(self, "Error", "All fields are required")
-            return
-
-        if self.db.add_product(sku, name, price, stock, alert):
-            QMessageBox.information(self, "Success", "Product added successfully!")
-            self.accept()
-        else:
-            QMessageBox.warning(self, "Error", "SKU already exists!")
+def add_product(self, sku, name, price, stock, alert_level=5):
+    try:
+        self.cur.execute(
+            "INSERT INTO products(sku, name, price, stock, alert_level) VALUES (?, ?, ?, ?, ?)",
+            (sku, name, price, stock, alert_level)
+        )
+        self.conn.commit()
+        return True
+    except sqlite3.IntegrityError:
+        return False
