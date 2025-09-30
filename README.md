@@ -34,5 +34,5 @@ Designed for small retail operations, this system supports **Owner and Cashier r
 ## **Installation**
 1. Clone the repository:  
 ```bash
-git clone https://github.com/your-username/pos-pyqt.git
+git clone https://github.com/sallarmirza/pos-python.git
 cd pos-pyqt
