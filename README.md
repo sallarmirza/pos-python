@@ -1,4 +1,4 @@
-# Python POS System (PyQt + SQLite)
+# Smart Mart
 
 A **desktop-based Point of Sale (POS) system** built using **Python, PyQt5, and SQLite**.  
 Designed for small retail operations, this system supports **Owner and Cashier roles** with role-based access and essential POS functionalities.
